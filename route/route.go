@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/url"
 	"reflect"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -20,6 +21,9 @@ import (
 // that a route should get a fixed percentage of the traffic
 // independent of how many instances are running.
 type Route struct {
+
+	// Glob represents compiled pattern.
+	Glob glob.Glob
 	// Host contains the host of the route.
 	// not used for routing but for config generation
 	// Table has a map with the host as key
@@ -38,9 +42,6 @@ type Route struct {
 	// total contains the total number of requests for this route.
 	// Used by the RRPicker
 	total uint64
-
-	// Glob represents compiled pattern.
-	Glob glob.Glob
 }
 
 func (r *Route) addTarget(service string, targetURL *url.URL, fixedWeight float64, tags []string, opts map[string]string) {
@@ -148,13 +149,7 @@ func (r *Route) setWeight(service string, weight float64, tags []string) int {
 
 func contains(src, dst []string) bool {
 	for _, d := range dst {
-		found := false
-		for _, s := range src {
-			if s == d {
-				found = true
-				break
-			}
-		}
+		found := slices.Contains(src, d)
 		if !found {
 			return false
 		}
@@ -306,7 +301,7 @@ func (r *Route) weighTargets() {
 		}
 
 		next, step := 0, usedSlots/s.n
-		for k := 0; k < s.n; k++ {
+		for range s.n {
 			// find the next empty slot
 			for targets[next] != nil {
 				next = (next + 1) % usedSlots

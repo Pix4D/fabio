@@ -6,9 +6,6 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"github.com/fabiolb/fabio/bgp"
-	"github.com/fabiolb/fabio/transport"
-	gkm "github.com/go-kit/kit/metrics"
 	"io"
 	"log"
 	"net"
@@ -20,6 +17,10 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/fabiolb/fabio/bgp"
+	"github.com/fabiolb/fabio/transport"
+	gkm "github.com/go-kit/kit/metrics"
 
 	"github.com/fabiolb/fabio/admin"
 	"github.com/fabiolb/fabio/auth"
@@ -37,7 +38,6 @@ import (
 	"github.com/fabiolb/fabio/registry/file"
 	"github.com/fabiolb/fabio/registry/static"
 	"github.com/fabiolb/fabio/route"
-	"github.com/fabiolb/fabio/trace"
 
 	grpc_proxy "github.com/mwitkow/grpc-proxy/proxy"
 	"github.com/pkg/profile"
@@ -53,7 +53,7 @@ import (
 // It is also set by the linker when fabio
 // is built via the Makefile or the build/docker.sh
 // script to ensure the correct version number
-var version = "1.6.7"
+var version = "1.7.0"
 
 var shuttingDown int32
 
@@ -140,15 +140,12 @@ func main() {
 	initRuntime(cfg)
 	initBackend(cfg)
 
-	// init OpenTracing, if enabled
-	trace.InitializeTracer(&cfg.Tracing)
-
 	startAdmin(cfg)
 
-	go watchNoRouteHTML(cfg)
+	go watchNoRouteHTML()
 
 	first := make(chan bool)
-	go watchBackend(cfg, metrics, first)
+	go watchBackend(cfg, first)
 	log.Print("[INFO] Waiting for first routing table")
 	<-first
 
@@ -231,7 +228,7 @@ func newHTTPProxy(cfg *config.Config, statsHandler *proxy.HttpStatsHandler) *pro
 		Transport:         transport.NewTransport(nil),
 		InsecureTransport: transport.NewTransport(&tls.Config{InsecureSkipVerify: true}),
 		Lookup: func(r *http.Request) *route.Target {
-			t := route.GetTable().Lookup(r, r.Header.Get("trace"), pick, match, globCache, cfg.GlobMatchingDisabled)
+			t := route.GetTable().Lookup(r, pick, match, globCache, cfg.GlobMatchingDisabled)
 			if t == nil {
 				statsHandler.Noroute.Add(1)
 				log.Print("[WARN] No route for ", r.Host, r.URL)
@@ -239,7 +236,6 @@ func newHTTPProxy(cfg *config.Config, statsHandler *proxy.HttpStatsHandler) *pro
 			return t
 		},
 		Logger:      l,
-		TracerCfg:   cfg.Tracing,
 		AuthSchemes: authSchemes,
 		Stats:       *statsHandler,
 	}
@@ -307,6 +303,7 @@ func startAdmin(cfg *config.Config) {
 			Access:   cfg.UI.Access,
 			Color:    cfg.UI.Color,
 			Title:    cfg.UI.Title,
+			Path:     cfg.UI.Path,
 			Version:  version,
 			Commands: route.Commands,
 			Cfg:      cfg,
@@ -370,7 +367,6 @@ func startServers(cfg *config.Config, stats metrics.Provider) {
 	var tcpSniOnce sync.Once
 
 	for _, l := range cfg.Listen {
-		l := l // capture loop var for go routines below
 		tlscfg, err := makeTLSConfig(l)
 		if err != nil {
 			exit.Fatal("[FATAL] ", err)
@@ -570,7 +566,7 @@ func initBackend(cfg *config.Config) {
 	}
 }
 
-func watchBackend(cfg *config.Config, p metrics.Provider, first chan bool) {
+func watchBackend(cfg *config.Config, first chan bool) {
 	var (
 		nextTable   string
 		lastTable   string
@@ -631,7 +627,7 @@ func watchBackend(cfg *config.Config, p metrics.Provider, first chan bool) {
 	}
 }
 
-func watchNoRouteHTML(cfg *config.Config) {
+func watchNoRouteHTML() {
 	html := registry.Default.WatchNoRouteHTML()
 	for {
 		next := <-html
@@ -658,10 +654,10 @@ func logRoutes(t route.Table, last, next, format string) {
 			switch d.Type {
 			case dmp.DiffDelete:
 				b.WriteString("- ")
-				b.WriteString(strings.Replace(t, "\n", "\n- ", -1))
+				b.WriteString(strings.ReplaceAll(t, "\n", "\n- "))
 			case dmp.DiffInsert:
 				b.WriteString("+ ")
-				b.WriteString(strings.Replace(t, "\n", "\n+ ", -1))
+				b.WriteString(strings.ReplaceAll(t, "\n", "\n+ "))
 			}
 		}
 		return b.String()
@@ -686,7 +682,7 @@ func logRoutes(t route.Table, last, next, format string) {
 	}
 }
 
-func toJSON(v interface{}) string {
+func toJSON(v any) string {
 	data, err := json.MarshalIndent(v, "", "    ")
 	if err != nil {
 		panic("json: " + err.Error())

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 	"testing"
 )
@@ -86,20 +87,19 @@ func BenchmarkPrefixMatcherRRPicker500Routes(b *testing.B) {
 // same target URLs. The number of generated routes is
 // domains * paths * depth.
 func makeRoutes(domains, paths, depth, urls int) Table {
-	s := ""
-	for i := 0; i < domains; i++ {
-		prefix := fmt.Sprintf("www.host-%d.com/", i)
-		for j := 0; j < paths; j++ {
-			for k := 0; k < depth; k++ {
-				prefix += fmt.Sprintf("path-%d/", k)
-				for l := 0; l < urls; l++ {
-					s += fmt.Sprintf("route add svc %s http://host:12345/\n", prefix)
+	var s strings.Builder
+	for i := range domains {
+		for range paths {
+			for k := range depth {
+				prefix := fmt.Sprintf("www.host-%d.com/path-%d/", i, k)
+				for range urls {
+					s.WriteString(fmt.Sprintf("route add svc %s http://host:12345/\n", prefix))
 				}
 			}
 		}
 	}
 
-	t, err := NewTable(bytes.NewBufferString(s))
+	t, err := NewTable(bytes.NewBufferString(s.String()))
 	if err != nil {
 		panic(err)
 	}
@@ -126,7 +126,7 @@ func benchmarkGet(t Table, match matcher, pick picker, pb *testing.PB) {
 	k, n := len(reqs), 0
 	//Glob Matching True
 	for pb.Next() {
-		t.Lookup(reqs[n%k], "", pick, match, globCache, globEnabled)
+		t.Lookup(reqs[n%k], pick, match, globCache, globEnabled)
 		n++
 	}
 }

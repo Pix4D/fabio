@@ -224,6 +224,7 @@ func load(cmdline, environ, envprefix []string, props *properties.Properties) (c
 	f.StringVar(&uiListenerValue, "ui.addr", defaultValues.UIListenerValue, "Address the UI/API is listening on")
 	f.StringVar(&cfg.UI.Color, "ui.color", defaultConfig.UI.Color, "background color of the UI")
 	f.StringVar(&cfg.UI.Title, "ui.title", defaultConfig.UI.Title, "optional title for the UI")
+	f.StringVar(&cfg.UI.Path, "ui.path", defaultConfig.UI.Path, "base path for the UI/API")
 
 	f.BoolVar(&cfg.UI.RoutingTable.Source.LinkEnabled, "ui.routingtable.source.linkenabled", defaultConfig.UI.RoutingTable.Source.LinkEnabled, "optional true/false flag if the source in the routing table of the admin UI should have a link")
 	f.BoolVar(&cfg.UI.RoutingTable.Source.NewTab, "ui.routingtable.source.newtab", defaultConfig.UI.RoutingTable.Source.NewTab, "optional true/false flag if the source link should be opened in a new tab, not affected if linkenabled is false")
@@ -233,15 +234,6 @@ func load(cmdline, environ, envprefix []string, props *properties.Properties) (c
 
 	f.StringVar(&cfg.ProfileMode, "profile.mode", defaultConfig.ProfileMode, "enable profiling mode, one of [cpu, mem, mutex, block, trace]")
 	f.StringVar(&cfg.ProfilePath, "profile.path", defaultConfig.ProfilePath, "path to profile dump file")
-	f.BoolVar(&cfg.Tracing.TracingEnabled, "tracing.TracingEnabled", defaultConfig.Tracing.TracingEnabled, "Enable/Disable OpenTrace, one of [true, false]")
-	f.StringVar(&cfg.Tracing.CollectorType, "tracing.CollectorType", defaultConfig.Tracing.CollectorType, "OpenTrace Collector Type, one of [http, kafka]")
-	f.StringVar(&cfg.Tracing.ConnectString, "tracing.ConnectString", defaultConfig.Tracing.ConnectString, "OpenTrace Collector host:port")
-	f.StringVar(&cfg.Tracing.ServiceName, "tracing.ServiceName", defaultConfig.Tracing.ServiceName, "Service name to embed in OpenTrace span")
-	f.StringVar(&cfg.Tracing.SpanName, "tracing.SpanName", defaultConfig.Tracing.SpanName, "Span name template used to embed in OpenTrace span")
-	f.StringVar(&cfg.Tracing.Topic, "tracing.Topic", defaultConfig.Tracing.Topic, "OpenTrace Collector Kafka Topic")
-	f.Float64Var(&cfg.Tracing.SamplerRate, "tracing.SamplerRate", defaultConfig.Tracing.SamplerRate, "OpenTrace sample rate percentage in decimal form")
-	f.StringVar(&cfg.Tracing.SpanHost, "tracing.SpanHost", defaultConfig.Tracing.SpanHost, "Host:Port info to add to spans")
-	f.BoolVar(&cfg.Tracing.TraceID128Bit, "tracing.TraceID128Bit", defaultConfig.Tracing.TraceID128Bit, "Generate 128 bit trace IDs")
 	f.BoolVar(&cfg.GlobMatchingDisabled, "glob.matching.disabled", defaultConfig.GlobMatchingDisabled, "Disable Glob Matching on routes, one of [true, false]")
 	f.IntVar(&cfg.GlobCacheSize, "glob.cache.size", defaultConfig.GlobCacheSize, "sets the size of the glob cache")
 
@@ -554,7 +546,7 @@ func parseTLSVersion(s string) (uint16, error) {
 
 func parseTLSCiphers(s string) ([]uint16, error) {
 	var c []uint16
-	for _, v := range strings.Split(s, ",") {
+	for v := range strings.SplitSeq(s, ",") {
 		v = strings.ToUpper(strings.TrimSpace(v))
 		if n, ok := tlsciphers[v]; ok {
 			c = append(c, n)

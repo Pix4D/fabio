@@ -19,7 +19,11 @@ import (
 //
 // The TLS certificates are re-issued automatically before they expire.
 type VaultPKISource struct {
-	Client       *vaultClient
+	Client *vaultClient
+
+	certsCh chan []tls.Certificate
+
+	certs        map[string]tls.Certificate // issued certs
 	CertPath     string
 	ClientCAPath string
 	CAUpgradeCN  string
@@ -28,10 +32,7 @@ type VaultPKISource struct {
 	// one hour.
 	Refresh time.Duration
 
-	certsCh chan []tls.Certificate
-
-	mu    sync.Mutex
-	certs map[string]tls.Certificate // issued certs
+	mu sync.Mutex
 }
 
 func NewVaultPKISource() *VaultPKISource {
@@ -59,7 +60,7 @@ func (s *VaultPKISource) Issue(commonName string) (*tls.Certificate, error) {
 		return nil, fmt.Errorf("vault: client: %s", err)
 	}
 
-	resp, err := c.Logical().Write(s.CertPath, map[string]interface{}{
+	resp, err := c.Logical().Write(s.CertPath, map[string]any{
 		"common_name": commonName,
 	})
 	if err != nil {
@@ -103,10 +104,7 @@ func (s *VaultPKISource) Issue(commonName string) (*tls.Certificate, error) {
 		return nil, fmt.Errorf("vault: issue: %s", err)
 	}
 
-	refresh := s.Refresh
-	if refresh < time.Hour {
-		refresh = time.Hour
-	}
+	refresh := max(s.Refresh, time.Hour)
 
 	expires := x509Cert.NotAfter
 	certTTL := time.Until(expires) - refresh

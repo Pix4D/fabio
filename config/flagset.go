@@ -19,7 +19,7 @@ func newStringSliceValue(val []string, p *[]string) *stringSliceValue {
 
 func (v *stringSliceValue) Set(s string) error {
 	*v = []string{}
-	for _, x := range strings.Split(s, ",") {
+	for x := range strings.SplitSeq(s, ",") {
 		x = strings.TrimSpace(x)
 		if x == "" {
 			continue
@@ -29,8 +29,8 @@ func (v *stringSliceValue) Set(s string) error {
 	return nil
 }
 
-func (v *stringSliceValue) Get() interface{} { return []string(*v) }
-func (v *stringSliceValue) String() string   { return strings.Join(*v, ",") }
+func (v *stringSliceValue) Get() any       { return []string(*v) }
+func (v *stringSliceValue) String() string { return strings.Join(*v, ",") }
 
 type floatSliceValue []float64
 
@@ -49,7 +49,7 @@ func (f *floatSliceValue) String() string {
 
 func (f *floatSliceValue) Set(s string) error {
 	*f = []float64{}
-	for _, x := range strings.Split(s, ",") {
+	for x := range strings.SplitSeq(s, ",") {
 		x = strings.TrimSpace(x)
 		if x == "" {
 			continue
@@ -122,7 +122,7 @@ func (f *FlagSet) ParseFlags(args, environ, prefixes []string, p *properties.Pro
 
 		// check environment variables
 		for _, pfx := range prefixes {
-			name := strings.ToUpper(pfx + strings.Replace(fl.Name, ".", "_", -1))
+			name := strings.ToUpper(pfx + strings.ReplaceAll(fl.Name, ".", "_"))
 			if val, ok := env[name]; ok {
 				f.set[fl.Name] = true
 				f.Set(fl.Name, val)

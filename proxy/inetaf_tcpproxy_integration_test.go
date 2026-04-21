@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"slices"
 	"testing"
 
 	"github.com/fabiolb/fabio/config"
@@ -50,7 +51,7 @@ route add tcproute example2.com/ tcp://%s opts "proto=tcp"`
 	table, _ := route.NewTable(bytes.NewBufferString(fmt.Sprintf(tpl, httpServer.URL, tcpServer.Listener.Addr())))
 	hp := &HTTPProxy{
 		Lookup: func(r *http.Request) *route.Target {
-			return table.Lookup(r, "", route.Picker["rr"], route.Matcher["prefix"], globCache, globEnabled)
+			return table.Lookup(r, route.Picker["rr"], route.Matcher["prefix"], globCache, globEnabled)
 		},
 	}
 
@@ -168,12 +169,6 @@ route add tcproute example2.com/ tcp://%s opts "proto=tcp"`
 }
 
 func foundDNSName(crt *x509.Certificate, dnsName string) bool {
-	found := false
-	for _, dname := range crt.DNSNames {
-		if dname == dnsName {
-			found = true
-			break
-		}
-	}
+	found := slices.Contains(crt.DNSNames, dnsName)
 	return found
 }

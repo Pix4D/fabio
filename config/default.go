@@ -10,12 +10,12 @@ var defaultValues = struct {
 	ListenerValue         string
 	CertSourcesValue      string
 	AuthSchemesValue      string
-	ReadTimeout           time.Duration
-	WriteTimeout          time.Duration
-	IdleTimeout           time.Duration
 	UIListenerValue       string
 	GZIPContentTypesValue string
 	BGPPeersValue         string
+	ReadTimeout           time.Duration
+	WriteTimeout          time.Duration
+	IdleTimeout           time.Duration
 }{
 	ListenerValue:   ":9999",
 	UIListenerValue: ":9998",
@@ -110,18 +110,6 @@ var defaultConfig = &Config{
 				Scheme:      "http",
 			},
 		},
-	},
-
-	Tracing: Tracing{
-		TracingEnabled: false,
-		CollectorType:  "http",
-		ConnectString:  "http://localhost:9411/api/v1/spans",
-		ServiceName:    "Fabiolb",
-		Topic:          "Fabiolb-Kafka-Topic",
-		SamplerRate:    -1,
-		SpanHost:       "localhost:9998",
-		SpanName:       "",
-		TraceID128Bit:  true,
 	},
 
 	GlobCacheSize: 1000,

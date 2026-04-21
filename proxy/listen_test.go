@@ -25,21 +25,19 @@ func TestGracefulShutdown(t *testing.T) {
 	// start proxy
 	addr := "127.0.0.1:57777"
 	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		h := &HTTPProxy{
 			Transport: http.DefaultTransport,
 			Lookup: func(r *http.Request) *route.Target {
 				tbl, _ := route.NewTable(bytes.NewBufferString("route add svc / " + srv.URL))
-				return tbl.Lookup(r, "", route.Picker["rr"], route.Matcher["prefix"], globCache, globEnabled)
+				return tbl.Lookup(r, route.Picker["rr"], route.Matcher["prefix"], globCache, globEnabled)
 			},
 		}
 		l := config.Listen{Addr: addr}
 		if err := ListenAndServeHTTP(l, h, nil); err != nil {
 			t.Log("ListenAndServeHTTP: ", err)
 		}
-	}()
+	})
 
 	// trigger shutdown after some time
 	delay := 100 * time.Millisecond

@@ -87,7 +87,6 @@ func (w *ServiceMonitor) makeConfig(checks []*api.HealthCheck) string {
 	sem := make(chan int, n)
 	cfgs := make(chan []string, len(m))
 	for name, passing := range m {
-		name, passing := name, passing
 		go func() {
 			sem <- 1
 			cfgs <- w.serviceConfig(name, passing)
@@ -96,7 +95,7 @@ func (w *ServiceMonitor) makeConfig(checks []*api.HealthCheck) string {
 	}
 
 	var config []string
-	for i := 0; i < len(m); i++ {
+	for range m {
 		cfg := <-cfgs
 		config = append(config, cfg...)
 	}

@@ -3,6 +3,7 @@ package consul
 import (
 	"errors"
 	"log"
+	"slices"
 
 	"github.com/fabiolb/fabio/config"
 	"github.com/fabiolb/fabio/registry"
@@ -13,9 +14,9 @@ import (
 // be is an implementation of a registry backend for consul.
 type be struct {
 	c     *api.Client
-	dc    string
 	cfg   *config.Consul
 	dereg map[string](chan bool)
+	dc    string
 }
 
 func NewBackend(cfg *config.Consul) (registry.Backend, error) {
@@ -180,10 +181,5 @@ func datacenter(c *api.Client) (string, error) {
 }
 
 func stringInSlice(str string, strSlice []string) bool {
-	for _, s := range strSlice {
-		if s == str {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(strSlice, str)
 }

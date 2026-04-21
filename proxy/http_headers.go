@@ -12,7 +12,7 @@ import (
 )
 
 // addResponseHeaders adds/updates headers in the response
-func addResponseHeaders(w http.ResponseWriter, r *http.Request, cfg config.Proxy) error {
+func addResponseHeaders(w http.ResponseWriter, r *http.Request, cfg config.Proxy) {
 	if r.TLS != nil && cfg.STSHeader.MaxAge > 0 {
 		sts := "max-age=" + i32toa(int32(cfg.STSHeader.MaxAge))
 		if cfg.STSHeader.Subdomains {
@@ -23,8 +23,6 @@ func addResponseHeaders(w http.ResponseWriter, r *http.Request, cfg config.Proxy
 		}
 		w.Header().Set("Strict-Transport-Security", sts)
 	}
-
-	return nil
 }
 
 var protectHeaders = map[string]bool{
@@ -53,7 +51,7 @@ func addHeaders(r *http.Request, cfg config.Proxy, stripPath string) error {
 	// exclude headers from Connection rules.
 	var conHeaders []string
 	for _, s := range r.Header.Values("Connection") {
-		for _, p := range strings.Split(s, ",") {
+		for p := range strings.SplitSeq(s, ",") {
 			p = strings.TrimSpace(p)
 			if !protectHeaders[textproto.CanonicalMIMEHeaderKey(p)] {
 				conHeaders = append(conHeaders, p)
@@ -165,11 +163,12 @@ var tlsver = map[uint16]string{
 	tls.VersionTLS10: "tls10",
 	tls.VersionTLS11: "tls11",
 	tls.VersionTLS12: "tls12",
+	tls.VersionTLS13: "tls13",
 }
 
 var digit16 = []byte("0123456789abcdef")
 
-// uint16base64 is a faster version of fmt.Sprintf("0x%04x", n)
+// uint16base16 is a faster version of fmt.Sprintf("0x%04x", n)
 //
 // BenchmarkUint16Base16/fmt.Sprintf-8         	10000000	       154 ns/op	       8 B/op	       2 allocs/op
 // BenchmarkUint16Base16/uint16base16-8        	50000000	        35.0 ns/op	       8 B/op	       1 allocs/op

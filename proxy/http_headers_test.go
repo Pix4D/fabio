@@ -152,6 +152,19 @@ func TestAddHeaders(t *testing.T) {
 			"",
 		},
 
+		{"set httpproto, tlsver and tlscipher on Forwarded for https and tls1.3",
+			&http.Request{RemoteAddr: "1.2.3.4:5555", Proto: "HTTP/2.0", TLS: &tls.ConnectionState{Version: tls.VersionTLS13, CipherSuite: tls.TLS_CHACHA20_POLY1305_SHA256}},
+			config.Proxy{},
+			"",
+			http.Header{
+				"Forwarded":         []string{"for=1.2.3.4; proto=https; httpproto=http/2.0; tlsver=tls13; tlscipher=0x1303"},
+				"X-Forwarded-Proto": []string{"https"},
+				"X-Forwarded-Port":  []string{"443"},
+				"X-Real-Ip":         []string{"1.2.3.4"},
+			},
+			"",
+		},
+
 		{"set httpproto on Forwarded",
 			&http.Request{RemoteAddr: "1.2.3.4:5555", Proto: "HTTP/1.1"},
 			config.Proxy{},
@@ -375,7 +388,6 @@ func TestAddHeaders(t *testing.T) {
 	}
 
 	for i, tt := range tests {
-		tt := tt // capture loop var
 
 		t.Run(tt.desc, func(t *testing.T) {
 			if tt.r.Header == nil {
@@ -436,7 +448,6 @@ func TestAddResponseHeaders(t *testing.T) {
 	}
 
 	for i, tt := range tests {
-		tt := tt // capture loop var
 
 		t.Run(tt.desc, func(t *testing.T) {
 			if tt.r.Header == nil {
@@ -444,14 +455,7 @@ func TestAddResponseHeaders(t *testing.T) {
 			}
 
 			w := httptest.NewRecorder()
-			err := addResponseHeaders(w, tt.r, tt.cfg)
-
-			if err != nil {
-				if got, want := err.Error(), tt.err; got != want {
-					t.Fatalf("%d: %s\ngot  %q\nwant %q", i, tt.desc, got, want)
-				}
-				return
-			}
+			addResponseHeaders(w, tt.r, tt.cfg)
 
 			if tt.err != "" {
 				t.Fatalf("%d: got nil want %q", i, tt.err)
@@ -488,7 +492,7 @@ func TestLocalPort(t *testing.T) {
 }
 
 func TestUint16Base16(t *testing.T) {
-	for i := uint16(0); i <= 9999; i++ {
+	for i := range uint16(9999) {
 		if got, want := uint16base16(i), fmt.Sprintf("0x%04x", i); got != want {
 			t.Fatalf("got %q for %04x want %q", got, i, want)
 		}
@@ -500,12 +504,12 @@ func BenchmarkUint16Base16(b *testing.B) {
 	// optimize the body of the loop away.
 	var s string
 	b.Run("fmt.Sprintf", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
+		for i := range b.N {
 			s = fmt.Sprintf("0x%04x", uint16(i))
 		}
 	})
 	b.Run("uint16base16", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
+		for i := range b.N {
 			s = uint16base16(uint16(i))
 		}
 	})

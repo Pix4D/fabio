@@ -17,10 +17,10 @@ type routecmd struct {
 	// svc is the consul service instance.
 	svc *api.CatalogService
 
+	env map[string]string
+
 	// prefix is the prefix of urlprefix tags. e.g. 'urlprefix-'.
 	prefix string
-
-	env map[string]string
 }
 
 func (r routecmd) build() []string {
@@ -58,7 +58,7 @@ func (r routecmd) build() []string {
 
 			var weight string
 			var ropts []string
-			for _, o := range strings.Fields(opts) {
+			for o := range strings.FieldsSeq(opts) {
 				switch {
 				case o == "proto=tcp":
 					dst = "tcp://" + addr

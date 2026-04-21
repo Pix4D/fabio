@@ -1,5 +1,82 @@
 # Changelog
 
+## [v1.7.0](https://github.com/fabiolb/fabio/tree/v1.7.0) (2026-03-25)
+
+[Full Changelog](https://github.com/fabiolb/fabio/compare/v1.6.11...v1.7.0)
+
+**Implemented enhancements:**
+
+- Remove outdated tracing functions? [\#970](https://github.com/fabiolb/fabio/issues/970)
+
+**Fixed bugs:**
+
+- fix leak for prometheus metrics cleanup [\#1015](https://github.com/fabiolb/fabio/pull/1015) ([evkuzin](https://github.com/evkuzin))
+
+**Closed issues:**
+
+- Metrics are leaking in prometheus [\#979](https://github.com/fabiolb/fabio/issues/979)
+- Enhance Fabio to support profiling Tracing  [\#623](https://github.com/fabiolb/fabio/issues/623)
+
+**Merged pull requests:**
+
+- fix: improve proxy addr documentation for multiple protocols use case [\#1018](https://github.com/fabiolb/fabio/pull/1018) ([RodrigoPerestrelo](https://github.com/RodrigoPerestrelo))
+- Fix broken links in documentation [\#1017](https://github.com/fabiolb/fabio/pull/1017) ([froque](https://github.com/froque))
+- Update GH-Actions and Go version. [\#1016](https://github.com/fabiolb/fabio/pull/1016) ([tristanmorgan](https://github.com/tristanmorgan))
+- Remove Tracing and update packages even more. \(\#970\) [\#976](https://github.com/fabiolb/fabio/pull/976) ([tristanmorgan](https://github.com/tristanmorgan))
+
+## [v1.6.11](https://github.com/fabiolb/fabio/tree/v1.6.11) (2025-12-09)
+
+[Full Changelog](https://github.com/fabiolb/fabio/compare/v1.6.10...v1.6.11)
+
+**Merged pull requests:**
+
+- Update dependancies for latest CVEs. [\#1012](https://github.com/fabiolb/fabio/pull/1012) ([tristanmorgan](https://github.com/tristanmorgan))
+
+## [v1.6.10](https://github.com/fabiolb/fabio/tree/v1.6.10) (2025-11-24)
+
+[Full Changelog](https://github.com/fabiolb/fabio/compare/v1.6.9...v1.6.10)
+
+**Closed issues:**
+
+- Call the fatal function within the goroutine of the main test function [\#1009](https://github.com/fabiolb/fabio/issues/1009)
+- Support for authentication middleware \(eg: oauth2-proxy\) ? [\#1006](https://github.com/fabiolb/fabio/issues/1006)
+
+**Merged pull requests:**
+
+- Update deps for upstream fixes. [\#1011](https://github.com/fabiolb/fabio/pull/1011) ([tristanmorgan](https://github.com/tristanmorgan))
+- Reverse IPv4/IPv6 check. [\#1010](https://github.com/fabiolb/fabio/pull/1010) ([tristanmorgan](https://github.com/tristanmorgan))
+
+## [v1.6.9](https://github.com/fabiolb/fabio/tree/v1.6.9) (2025-10-16)
+
+[Full Changelog](https://github.com/fabiolb/fabio/compare/v1.6.8...v1.6.9)
+
+**Merged pull requests:**
+
+- FROM scratch build and update deps. [\#1008](https://github.com/fabiolb/fabio/pull/1008) ([tristanmorgan](https://github.com/tristanmorgan))
+- feat: add armv7 support for docker images [\#1007](https://github.com/fabiolb/fabio/pull/1007) ([amd989](https://github.com/amd989))
+
+## [v1.6.8](https://github.com/fabiolb/fabio/tree/v1.6.8) (2025-09-23)
+
+[Full Changelog](https://github.com/fabiolb/fabio/compare/v1.6.7...v1.6.8)
+
+**Closed issues:**
+
+- Health check on port 9999 [\#995](https://github.com/fabiolb/fabio/issues/995)
+- Multiple entries in proxy.auth do not work as specified in documentation [\#929](https://github.com/fabiolb/fabio/issues/929)
+- Correct Consul ACL Policy for Fabio [\#831](https://github.com/fabiolb/fabio/issues/831)
+- Translating `upstream-host/path` to `path.example.com` [\#801](https://github.com/fabiolb/fabio/issues/801)
+
+**Merged pull requests:**
+
+- Package dependencies updated. [\#1004](https://github.com/fabiolb/fabio/pull/1004) ([tristanmorgan](https://github.com/tristanmorgan))
+- docs: Fixes bad example for creating multiple basic authorization schemes [\#1003](https://github.com/fabiolb/fabio/pull/1003) ([steffkelsey](https://github.com/steffkelsey))
+- Enabling many more linters in the pipeline. [\#999](https://github.com/fabiolb/fabio/pull/999) ([tristanmorgan](https://github.com/tristanmorgan))
+- Fix missing brand logo in routes page [\#998](https://github.com/fabiolb/fabio/pull/998) ([tristanmorgan](https://github.com/tristanmorgan))
+- Fixing up some web links [\#997](https://github.com/fabiolb/fabio/pull/997) ([tristanmorgan](https://github.com/tristanmorgan))
+- Fix the ui.routingtable.source.newtab doc. [\#996](https://github.com/fabiolb/fabio/pull/996) ([tristanmorgan](https://github.com/tristanmorgan))
+- extract only binary from zipfile [\#994](https://github.com/fabiolb/fabio/pull/994) ([shantanugadgil](https://github.com/shantanugadgil))
+- add option to constrain fabio instance to specific consul namespace [\#812](https://github.com/fabiolb/fabio/pull/812) ([baabgai](https://github.com/baabgai))
+
 ## [v1.6.7](https://github.com/fabiolb/fabio/tree/v1.6.7) (2025-05-30)
 
 [Full Changelog](https://github.com/fabiolb/fabio/compare/v1.6.6...v1.6.7)

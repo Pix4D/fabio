@@ -19,7 +19,6 @@ import (
 	"github.com/fabiolb/fabio/noroute"
 	"github.com/fabiolb/fabio/proxy/gzip"
 	"github.com/fabiolb/fabio/route"
-	"github.com/fabiolb/fabio/trace"
 	"github.com/fabiolb/fabio/uuid"
 )
 
@@ -43,12 +42,9 @@ type HttpStatsHandler struct {
 
 // HTTPProxy is a dynamic reverse proxy for HTTP and HTTPS protocols.
 type HTTPProxy struct {
-	// Config is the proxy configuration as provided during startup.
-	Config config.Proxy
 
-	// Time returns the current time as the number of seconds since the epoch.
-	// If Time is nil, time.Now is used.
-	Time func() time.Time
+	// stats contains all of the stats bits
+	Stats HttpStatsHandler
 
 	// Transport is the http connection pool configured with timeouts.
 	// The proxy will panic if this value is nil.
@@ -59,15 +55,16 @@ type HTTPProxy struct {
 	// self-signed certs.
 	InsecureTransport http.RoundTripper
 
+	// Time returns the current time as the number of seconds since the epoch.
+	// If Time is nil, time.Now is used.
+	Time func() time.Time
+
 	// Lookup returns a target host for the given request.
 	// The proxy will panic if this value is nil.
 	Lookup func(*http.Request) *route.Target
 
 	// Logger is the access logger for the requests.
 	Logger logger.Logger
-
-	// TracerCfg is the Open Tracing configuration as provided during startup
-	TracerCfg config.Tracing
 
 	// UUID returns a unique id in uuid format.
 	// If UUID is nil, uuid.NewUUID() is used.
@@ -76,8 +73,8 @@ type HTTPProxy struct {
 	// Auth schemes registered with the server
 	AuthSchemes map[string]auth.AuthScheme
 
-	// stats contains all of the stats bits
-	Stats HttpStatsHandler
+	// Config is the proxy configuration as provided during startup.
+	Config config.Proxy
 }
 
 func (p *HTTPProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -92,10 +89,6 @@ func (p *HTTPProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		r.Header.Set(p.Config.RequestID, id())
 	}
-
-	//Create Span
-	span := trace.CreateSpan(r, &p.TracerCfg)
-	defer span.Finish()
 
 	t := p.Lookup(r)
 
@@ -184,13 +177,7 @@ func (p *HTTPProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := addResponseHeaders(w, r, p.Config); err != nil {
-		http.Error(w, "cannot add response headers", http.StatusInternalServerError)
-		return
-	}
-
-	//Add OpenTrace Headers to response
-	trace.InjectHeaders(span, r)
+	addResponseHeaders(w, r, p.Config)
 
 	upgrade, accept := r.Header.Get("Upgrade"), r.Header.Get("Accept")
 

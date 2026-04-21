@@ -2,10 +2,11 @@ package metrics
 
 import (
 	"fmt"
-	"github.com/fabiolb/fabio/config"
-	gkm "github.com/go-kit/kit/metrics"
 	"log"
 	"strings"
+
+	"github.com/fabiolb/fabio/config"
+	gkm "github.com/go-kit/kit/metrics"
 )
 
 // Provider is an abstraction of a metrics backend.
@@ -20,6 +21,29 @@ type Provider interface {
 	NewHistogram(name string, labels ...string) gkm.Histogram
 }
 
+// DeletableCounter is a counter that supports deleting label value combinations.
+// This is used to clean up stale metrics when routes are removed.
+type DeletableCounter interface {
+	gkm.Counter
+	// DeleteLabelValues removes the metric with the given label values.
+	// Returns true if the metric was deleted.
+	DeleteLabelValues(labelValues ...string) bool
+}
+
+// DeletableGauge is a gauge that supports deleting label value combinations.
+type DeletableGauge interface {
+	gkm.Gauge
+	// DeleteLabelValues removes the metric with the given label values.
+	DeleteLabelValues(labelValues ...string) bool
+}
+
+// DeletableHistogram is a histogram that supports deleting label value combinations.
+type DeletableHistogram interface {
+	gkm.Histogram
+	// DeleteLabelValues removes the metric with the given label values.
+	DeleteLabelValues(labelValues ...string) bool
+}
+
 func Initialize(cfg *config.Metrics) (Provider, error) {
 	var p []Provider
 	var prefix string
@@ -27,7 +51,7 @@ func Initialize(cfg *config.Metrics) (Provider, error) {
 	if prefix, err = parsePrefix(cfg.Prefix); err != nil {
 		return nil, fmt.Errorf("metrics: invalid Prefix template: %w", err)
 	}
-	for _, x := range strings.Split(cfg.Target, ",") {
+	for x := range strings.SplitSeq(cfg.Target, ",") {
 		x = strings.TrimSpace(x)
 		switch x {
 		case "flat", "stdout":
