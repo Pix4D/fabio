@@ -41,9 +41,12 @@ func TestTCPDyanmicProxy(t *testing.T) {
 	proxyAddr := "127.0.0.1:57778"
 	go func() {
 		h := &tcp.DynamicProxy{
-			Lookup: func(h string) *route.Target {
+			Lookup: func(hosts []string) *route.Target {
 				tbl, _ := route.NewTable(bytes.NewBufferString("route add srv 127.0.0.1:57778 tcp://" + srv.Addr))
-				return tbl.LookupHost(h, route.Picker["rr"])
+				for _, h := range hosts {
+					return tbl.LookupHost(h, route.Picker["rr"])
+				}
+				return nil
 			},
 		}
 		l := config.Listen{Addr: proxyAddr}
@@ -143,9 +146,6 @@ func TestTCPProxyWithTLS(t *testing.T) {
 		}
 	}()
 	defer Close()
-
-	// give cert store some time to pick up certs
-	time.Sleep(250 * time.Millisecond)
 
 	rootCAs := x509.NewCertPool()
 	if ok := rootCAs.AppendCertsFromPEM(internal.LocalhostCert); !ok {
@@ -252,8 +252,7 @@ func TestTCPProxyWithProxyProto(t *testing.T) {
 		h := &tcp.Proxy{
 			Lookup: func(h string) *route.Target {
 				tbl, _ := route.NewTable(bytes.NewBufferString("route add srv :57778 tcp://" + srv.Addr + " opts \"pxyproto=true\""))
-				tgt := tbl.LookupHost(h, route.Picker["rr"])
-				return tgt
+				return tbl.LookupHost(h, route.Picker["rr"])
 			},
 		}
 		l := config.Listen{Addr: proxyAddr, ProxyProto: true}

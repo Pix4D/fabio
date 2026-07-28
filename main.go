@@ -10,6 +10,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"net/textproto"
 	"os"
 	"runtime"
 	"runtime/debug"
@@ -53,7 +54,7 @@ import (
 // It is also set by the linker when fabio
 // is built via the Makefile or the build/docker.sh
 // script to ensure the correct version number
-var version = "1.7.0"
+var version = "1.7.2"
 
 var shuttingDown int32
 
@@ -189,6 +190,12 @@ func newHTTPProxy(cfg *config.Config, statsHandler *proxy.HttpStatsHandler) *pro
 	//Init Glob Cache
 	globCache := route.NewGlobCache(cfg.GlobCacheSize)
 
+	//Init ProtectHeaders
+	protectHeaders := proxy.DefaultProtectHeaders
+	protectHeaders[textproto.CanonicalMIMEHeaderKey(cfg.Proxy.RequestID)] = true
+	protectHeaders[textproto.CanonicalMIMEHeaderKey(cfg.Proxy.ClientIPHeader)] = true
+	protectHeaders[textproto.CanonicalMIMEHeaderKey(cfg.Proxy.TLSHeader)] = true
+
 	switch cfg.Log.AccessTarget {
 	case "":
 		log.Printf("[INFO] Access logging disabled")
@@ -227,6 +234,7 @@ func newHTTPProxy(cfg *config.Config, statsHandler *proxy.HttpStatsHandler) *pro
 		Config:            cfg.Proxy,
 		Transport:         transport.NewTransport(nil),
 		InsecureTransport: transport.NewTransport(&tls.Config{InsecureSkipVerify: true}),
+		ProtectHeaders:    protectHeaders,
 		Lookup: func(r *http.Request) *route.Target {
 			t := route.GetTable().Lookup(r, pick, match, globCache, cfg.GlobMatchingDisabled)
 			if t == nil {
@@ -238,6 +246,21 @@ func newHTTPProxy(cfg *config.Config, statsHandler *proxy.HttpStatsHandler) *pro
 		Logger:      l,
 		AuthSchemes: authSchemes,
 		Stats:       *statsHandler,
+	}
+}
+
+func lookupDynamicTcpHostFn(cfg *config.Config, notFound gkm.Counter) func([]string) *route.Target {
+	pick := route.Picker[cfg.Proxy.Strategy]
+	return func(hosts []string) *route.Target {
+		for _, host := range hosts {
+			t := route.GetTable().LookupHost(host, pick)
+			if t != nil {
+				return t
+			}
+		}
+		notFound.Add(1)
+		log.Print("[WARN] No route for any hosts: ", hosts)
+		return nil
 	}
 }
 
@@ -341,7 +364,7 @@ func startServers(cfg *config.Config, stats metrics.Provider) {
 
 	httpCounters := func() {
 		httpStatsHandler = &proxy.HttpStatsHandler{
-			Requests:        stats.NewHistogram("requests"),
+			Requests:        stats.NewHistogram("requests", "service"),
 			Noroute:         notFound,
 			WSConn:          stats.NewGauge("ws.conn"),
 			StatusTimer:     stats.NewHistogram("http.status", "code", "service"),
@@ -462,7 +485,7 @@ func startServers(cfg *config.Config, stats metrics.Provider) {
 						go func() {
 							h := &tcp.DynamicProxy{
 								DialTimeout: cfg.Proxy.DialTimeout,
-								Lookup:      lookupHostFn(cfg, notFound),
+								Lookup:      lookupDynamicTcpHostFn(cfg, notFound),
 								Conn:        tcpConn,
 								ConnFail:    tcpConnFail,
 								Noroute:     tcpNoRoute,
@@ -669,7 +692,11 @@ func logRoutes(t route.Table, last, next, format string) {
 		log.Printf("[INFO] Updated config to\n%s", t.Dump())
 
 	case "delta":
-		if delta := fmtDiff(dmp.New().DiffMain(last, next, true)); delta != "" {
+		dmp := dmp.New()
+		chars1, chars2, lineArray := dmp.DiffLinesToChars(last, next)
+		diffs := dmp.DiffMain(chars1, chars2, false)
+		diffs = dmp.DiffCharsToLines(diffs, lineArray)
+		if delta := fmtDiff(diffs); delta != "" {
 			log.Printf("[INFO] Config updates\n%s", delta)
 		}
 
