@@ -8,7 +8,8 @@
 
 name: govulncheck
 on:
-  push:
+  # disable check on push event until https://pix4dbug.atlassian.net/browse/PCI-5089 is done
+  # push:
   schedule: # daily at 07:22 UTC
     - cron: '22 07 * * *'
 permissions:
